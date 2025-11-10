@@ -12,7 +12,7 @@ const fs = require("fs");
  * @returns {Object} 国际化配置映射
  */
 function parseExcelFile(options) {
-  const { filePath, outputPath } = options;
+  const { filePath, outputPath } = options || {};
 
   try {
     // 读取Excel文件
