@@ -1,0 +1,10 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# 运行国际化Key验证
+echo "正在验证国际化Key的唯一性..."
+npx lint-staged
+
+# 运行测试
+echo "正在运行单元测试..."
+yarn test --watch=false
