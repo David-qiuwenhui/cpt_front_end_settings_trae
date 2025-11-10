@@ -13,49 +13,55 @@ const fs = require("fs");
  * 生成Excel文件
  * @param {Object} options 生成选项
  */
-function generateExcelFile(options) {
-  const { input, outputPath } = options;
-
+function generateExcelFile(jsonInputPath, excelOutputPath) {
   try {
-    let i18nMap;
-
-    // 如果输入是文件路径，则读取文件
-    if (typeof input === "string") {
-      if (!fs.existsSync(input)) {
-        throw new Error(`输入文件不存在: ${input}`);
-      }
-
-      const fileContent = fs.readFileSync(input, "utf-8");
-      i18nMap = JSON.parse(fileContent);
-    } else {
-      // 直接使用输入的对象
-      i18nMap = input;
+    // 读取JSON文件
+    if (!fs.existsSync(jsonInputPath)) {
+      throw new Error(`输入文件不存在: ${jsonInputPath}`);
     }
 
-    // 构建Excel数据格式
-    const headers = ["key", "IContent", "Remark", "Last Update Date"];
-    const data = [headers];
+    const jsonData = fs.readFileSync(jsonInputPath, "utf8");
+    const i18nConfig = JSON.parse(jsonData);
 
-    // 将国际化配置转换为Excel行
-    Object.entries(i18nMap).forEach(([key, content]) => {
-      const row = [key, content, "", new Date().toISOString().split("T")[0]];
-      data.push(row);
+    // 创建工作簿
+    const workbook = XLSX.utils.book_new();
+
+    // 获取所有语言键
+    const languages = Object.keys(i18nConfig);
+    if (languages.length === 0) {
+      throw new Error("没有找到国际化配置数据");
+    }
+
+    // 获取所有翻译键
+    const allKeys = Object.keys(i18nConfig[languages[0]] || {});
+
+    // 准备Excel数据
+    const excelData = [languages]; // 表头
+
+    // 添加每行数据
+    allKeys.forEach((key) => {
+      const row = [];
+      languages.forEach((lang) => {
+        row.push(i18nConfig[lang]?.[key] || "");
+      });
+      excelData.push(row);
     });
 
-    // 创建工作簿和工作表
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
+    // 创建工作表
+    const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+
+    // 添加工作表到工作簿
     XLSX.utils.book_append_sheet(workbook, worksheet, "i18n");
 
     // 确保输出目录存在
-    const outputDir = path.dirname(outputPath);
+    const outputDir = path.dirname(excelOutputPath);
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
     // 写入Excel文件
-    XLSX.writeFile(workbook, outputPath);
-    console.log(`Excel文件已生成: ${outputPath}`);
+    XLSX.writeFile(workbook, excelOutputPath);
+    console.log(`Excel文件已生成: ${excelOutputPath}`);
   } catch (error) {
     console.error("生成Excel文件失败:", error);
     throw error;
@@ -73,17 +79,17 @@ async function main() {
   try {
     console.log("开始生成Excel国际化配置...");
 
-    generateExcelFile({
-      input: JSON_INPUT_PATH,
-      outputPath: EXCEL_OUTPUT_PATH,
-    });
+    generateExcelFile(JSON_INPUT_PATH, EXCEL_OUTPUT_PATH);
 
     console.log(`Excel文件生成完成！`);
     console.log(`Excel文件已保存至: ${EXCEL_OUTPUT_PATH}`);
 
     process.exit(0);
-  } catch (error) {
-    console.error("生成失败:", error.message);
+  } catch (err) {
+    console.error(
+      "生成失败:",
+      err instanceof Error ? err.message : String(err)
+    );
     process.exit(1);
   }
 }
