@@ -5,9 +5,15 @@
  * 用于将JSON格式的国际化配置转换回Excel格式
  */
 
-const path = require("path");
-const XLSX = require("xlsx");
-const fs = require("fs");
+import path from "path";
+import XLSX from "xlsx";
+import fs from "fs";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+// 获取当前文件和目录路径
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * 生成Excel文件
@@ -69,8 +75,8 @@ function generateExcelFile(jsonInputPath, excelOutputPath) {
 }
 
 // 配置文件路径
-const JSON_INPUT_PATH = path.join(__dirname, "../../output/i18n.json");
-const EXCEL_OUTPUT_PATH = path.join(__dirname, "../../output/i18n.xlsx");
+const JSON_INPUT_PATH = path.join(__dirname, "../output/i18n.json");
+const EXCEL_OUTPUT_PATH = path.join(__dirname, "../output/i18n.xlsx");
 
 /**
  * 主函数

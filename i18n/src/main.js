@@ -1,10 +1,32 @@
 /**
  * 国际化配置管理工程主入口
  */
+import path from "path";
+import XLSX from "xlsx";
+import fs from "fs";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import { TABLE_HEADER_INDEX } from "./constants/index.js";
+import { validateRowItem } from "./utils/index.js";
 
-const path = require("path");
-const XLSX = require("xlsx");
-const fs = require("fs");
+// 获取当前文件和目录路径
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+function parseExcelToJsonData(filePath) {
+  // 读取Excel文件
+  const workbook = XLSX.readFile(filePath);
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+
+  // 转换为JSON格式
+  const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+    header: 1,
+    raw: false,
+  });
+
+  return jsonData;
+}
 
 /**
  * 解析Excel文件，提取国际化配置
@@ -16,17 +38,10 @@ function parseExcelFile(options) {
 
   try {
     // 读取Excel文件
-    const workbook = XLSX.readFile(filePath);
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-
-    // 转换为JSON格式
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-      header: 1,
-      raw: false,
-    });
+    const jsonData = parseExcelToJsonData(filePath);
 
     // 提取表头和数据
+    // TODO: 表头校验
     const headers = jsonData[0];
     const dataRows = jsonData.slice(1);
 
@@ -35,21 +50,25 @@ function parseExcelFile(options) {
     const allItems = [];
 
     dataRows.forEach((row) => {
-      const item = {
-        key: row[0],
-        IContent: row[1],
-        Remark: row[2],
-        "Last Update Date": row[3],
+      // 构建行数据对象
+      const rowItem = {
+        key: row[TABLE_HEADER_INDEX.KEY],
+        IContent: row[TABLE_HEADER_INDEX.VALUE],
+        Remark: row[TABLE_HEADER_INDEX.REMARK],
+        "Last Update Date": row[TABLE_HEADER_INDEX.UPDATE_TIME],
       };
 
       // 验证必填字段
-      if (!item.key || !item.IContent) {
-        console.warn(`行数据不完整，跳过: ${JSON.stringify(row)}`);
+      if (!validateRowItem(rowItem)) {
         return;
       }
 
-      allItems.push(item);
-      i18nMap[item.key] = item.IContent;
+      allItems.push(rowItem);
+
+      // 构建国际化配置映射
+      // const uniqueKeyObj = { zh_cn: rowItem.IContent };
+      // uniqueKeyObj[rowItem.key] = rowItem.IContent;
+      i18nMap[rowItem.key] = rowItem.IContent;
     });
 
     // 检查key重复
@@ -63,10 +82,12 @@ function parseExcelFile(options) {
     // 如果指定了输出路径，写入文件
     if (outputPath) {
       const outputDir = path.dirname(outputPath);
+      // 如果输出目录不存在，递归创建
       if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
       }
 
+      // 写入JSON文件
       fs.writeFileSync(outputPath, JSON.stringify(i18nMap, null, 2), "utf-8");
       console.log(`国际化配置已输出到: ${outputPath}`);
     }
@@ -186,8 +207,8 @@ function generateExcelFile(options) {
 }
 
 // 配置文件路径
-const EXCEL_INPUT_PATH = path.join(__dirname, "../../i18n/input/i18n.xlsx");
-const JSON_OUTPUT_PATH = path.join(__dirname, "../../i18n/output/i18n.json");
+const EXCEL_INPUT_PATH = path.join(__dirname, "../input/i18n.xlsx");
+const JSON_OUTPUT_PATH = path.join(__dirname, "../output/i18n.json");
 
 /**
  * 主类 - 国际化管理器
@@ -200,7 +221,7 @@ class I18nManager {
    * @returns {Object} 国际化配置映射
    */
   parseExcel(excelPath = EXCEL_INPUT_PATH, outputPath = JSON_OUTPUT_PATH) {
-    return parseExcelFile({ filePath: excelPath, outputPath });
+    return parseExcelFile({ filePath: excelPath, outputPath: outputPath });
   }
 
   /**
@@ -224,17 +245,17 @@ class I18nManager {
 
 // 创建单例实例
 const i18nManager = new I18nManager();
-
 // 导出主管理器实例
-module.exports = i18nManager;
+export default i18nManager;
 
 // 如果直接运行此文件，执行默认操作
-if (require.main === module) {
+if (import.meta.url === new URL(process.argv[1], import.meta.url).href) {
   console.log("国际化配置管理工程启动");
-
   try {
     // 默认解析Excel文件
     const i18nMap = i18nManager.parseExcel();
+
+    // 打印解析结果
     console.log(`\n已成功解析 ${Object.keys(i18nMap).length} 条国际化配置`);
     console.log("\n使用以下命令进行更多操作:");
     console.log("- yarn parse:excel: 解析Excel配置文件");

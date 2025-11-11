@@ -5,8 +5,14 @@
  * 用于验证国际化配置中key的唯一性
  */
 
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+// 获取当前文件和目录路径
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * 验证国际化key的唯一性
@@ -26,7 +32,7 @@ function validateUniqueKeys(i18nMap) {
 }
 
 // JSON配置文件路径
-const JSON_CONFIG_PATH = path.join(__dirname, "../../output/i18n.json");
+const JSON_CONFIG_PATH = path.join(__dirname, "../output/i18n.json");
 
 /**
  * 读取并验证国际化配置
@@ -72,5 +78,10 @@ function main() {
   process.exit(0);
 }
 
-// 执行主函数
-main();
+// 只有当直接运行此文件时才执行主函数
+if (import.meta.url === new URL(process.argv[1], import.meta.url).href) {
+  main();
+}
+
+// 导出函数以便测试
+export { validateUniqueKeys, validateI18nKeys };

@@ -2,13 +2,20 @@
   "name": "cpt_front_end_settings_trae",
   "version": "1.0.0",
   "description": "国际化配置管理工程",
+  "type": "module",
   "main": "i18n/src/main.js",
   "scripts": {
-    "dev": "node i18n/src/main.js",
-    "generate:excel": "node i18n/src/scripts/generateExcel.js",
-    "parse:excel": "node i18n/src/scripts/parseExcel.js",
+    "dev": "node --experimental-modules i18n/src/main.js",
+    "generate:excel": "node --experimental-modules i18n/src/scripts/generateExcel.js",
+    "parse:excel": "node --experimental-modules i18n/src/scripts/parseExcel.js",
     "test": "vitest",
     "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:verbose": "vitest run --reporter=verbose",
+    "test:scripts": "vitest run --reporter=verbose i18n/src/scripts/__tests__/*.test.js",
+    "test:main": "vitest run --reporter=verbose i18n/src/__tests__/*.test.js",
     "prepare": "husky install"
   },
   "keywords": [
@@ -29,7 +36,7 @@
   },
   "lint-staged": {
     "**/*.{js,ts}": [
-      "node i18n/src/scripts/validateKeys.js"
+      "node --experimental-modules i18n/src/scripts/validateKeys.js"
     ]
   }
 }

@@ -1,1 +1,4 @@
-{}
+{
+  "ts.channel.key1": "key congtent 1",
+  "ts.channel.key2": "键值中文内容1"
+}
